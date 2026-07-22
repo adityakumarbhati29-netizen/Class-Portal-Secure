@@ -16,7 +16,14 @@
     "ios": {
       "supportsTablet": false
     },
-    "android": {},
+    "android": {
+      "package": "com.class10h.eportal",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#5C6BC0"
+      }
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
