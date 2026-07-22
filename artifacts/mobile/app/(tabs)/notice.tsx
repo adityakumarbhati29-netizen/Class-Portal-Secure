@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  Alert,
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useData, Notice } from '@/contexts/DataContext';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ConfirmModal from '@/components/ConfirmModal';
 
 const PRIORITY_CONFIG = {
   high: { color: '#C62828', bg: '#FFEBEE', border: '#EF9A9A', label: 'High Priority', icon: 'alert-circle' as const, grad: ['#C62828', '#EF5350'] as [string, string] },
@@ -68,6 +68,7 @@ export default function NoticeScreen() {
   const isAdmin = user?.role === 'admin';
 
   const [showModal, setShowModal] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [priority, setPriority] = useState<'high' | 'medium' | 'low'>('medium');
@@ -98,11 +99,11 @@ export default function NoticeScreen() {
     setTitle(''); setContent(''); setPriority('medium'); setFormError('');
   }
 
-  async function handleDelete(id: string) {
-    Alert.alert('Delete Notice', 'Remove this notice?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await deleteNotice(id); await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } },
-    ]);
+  async function confirmDelete() {
+    if (!confirmDeleteId) return;
+    await deleteNotice(confirmDeleteId);
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setConfirmDeleteId(null);
   }
 
   // Count stats
@@ -132,7 +133,7 @@ export default function NoticeScreen() {
           <NoticeCard
             notice={item}
             isAdmin={isAdmin}
-            onDelete={() => handleDelete(item.id)}
+            onDelete={() => setConfirmDeleteId(item.id)}
           />
         )}
         contentContainerStyle={[styles.listContent, { paddingBottom: bottomPad }]}
@@ -144,6 +145,15 @@ export default function NoticeScreen() {
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No notices yet</Text>
           </View>
         }
+      />
+
+      <ConfirmModal
+        visible={!!confirmDeleteId}
+        title="Delete Notice"
+        message="Remove this notice from the board?"
+        confirmLabel="Delete"
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmDeleteId(null)}
       />
 
       {isAdmin && (

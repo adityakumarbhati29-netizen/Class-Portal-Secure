@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  Alert,
   ScrollView,
   Platform,
 } from 'react-native';
@@ -18,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useData, ClassTest, ClassTestResult } from '@/contexts/DataContext';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ConfirmModal from '@/components/ConfirmModal';
 
 const SUBJECT_COLORS: Record<string, string[]> = {
   Mathematics: ['#3949AB', '#5C6BC0'],
@@ -140,6 +140,7 @@ export default function ClassTestScreen() {
 
   const [selectedTest, setSelectedTest] = useState<ClassTest | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [subject, setSubject] = useState('');
   const [date, setDate] = useState('');
   const [maxMarks, setMaxMarks] = useState('');
@@ -171,11 +172,11 @@ export default function ClassTestScreen() {
     setSubject(''); setDate(''); setMaxMarks(''); setResultsInput({}); setFormError('');
   }
 
-  async function handleDelete(id: string) {
-    Alert.alert('Delete Test', 'Delete this test record?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await deleteClassTest(id); await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } },
-    ]);
+  async function confirmDelete() {
+    if (!confirmDeleteId) return;
+    await deleteClassTest(confirmDeleteId);
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setConfirmDeleteId(null);
   }
 
   return (
@@ -187,7 +188,7 @@ export default function ClassTestScreen() {
           <TestCard
             test={item}
             isAdmin={isAdmin}
-            onDelete={() => handleDelete(item.id)}
+            onDelete={() => setConfirmDeleteId(item.id)}
             onPress={() => setSelectedTest(item)}
           />
         )}
@@ -211,6 +212,15 @@ export default function ClassTestScreen() {
       )}
 
       <ResultsModal test={selectedTest} visible={!!selectedTest} onClose={() => setSelectedTest(null)} />
+
+      <ConfirmModal
+        visible={!!confirmDeleteId}
+        title="Delete Test"
+        message="Delete this class test record permanently?"
+        confirmLabel="Delete"
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
 
       {/* Add Test Modal */}
       <Modal visible={showAddModal} transparent animationType="slide">

@@ -7,7 +7,6 @@ import {
   ScrollView,
   Modal,
   TextInput,
-  Alert,
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,6 +16,7 @@ import { useRouter } from 'expo-router';
 import { useAuth, User } from '@/contexts/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
+import ConfirmModal from '@/components/ConfirmModal';
 
 export default function SettingsScreen() {
   const { user, users, logout, addUser, removeUser } = useAuth();
@@ -25,6 +25,8 @@ export default function SettingsScreen() {
   const router = useRouter();
 
   const [showPassword, setShowPassword] = useState(false);
+  const [confirmLogout, setConfirmLogout] = useState(false);
+  const [confirmDeleteUserId, setConfirmDeleteUserId] = useState<string | null>(null);
 
   // Add user modal
   const [showAddUser, setShowAddUser] = useState(false);
@@ -39,19 +41,11 @@ export default function SettingsScreen() {
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
 
-  async function handleLogout() {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: async () => {
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          await logout();
-          router.replace('/login');
-        },
-      },
-    ]);
+  async function doLogout() {
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setConfirmLogout(false);
+    await logout();
+    router.replace('/login');
   }
 
   async function handleAddUser() {
@@ -84,22 +78,11 @@ export default function SettingsScreen() {
     }
   }
 
-  async function handleDeleteUser(u: User) {
-    if (u.id === user?.id) {
-      Alert.alert('Error', 'You cannot delete your own account');
-      return;
-    }
-    Alert.alert('Delete User', `Remove ${u.name}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          await removeUser(u.id);
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        },
-      },
-    ]);
+  async function doDeleteUser() {
+    if (!confirmDeleteUserId) return;
+    await removeUser(confirmDeleteUserId);
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setConfirmDeleteUserId(null);
   }
 
   function initials(name: string) {
@@ -213,7 +196,7 @@ export default function SettingsScreen() {
                     </View>
                     {u.id !== user?.id && (
                       <TouchableOpacity
-                        onPress={() => handleDeleteUser(u)}
+                        onPress={() => setConfirmDeleteUserId(u.id)}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       >
                         <Ionicons name="trash-outline" size={18} color="#EF4444" />
@@ -243,7 +226,7 @@ export default function SettingsScreen() {
 
         {/* Logout */}
         <View style={styles.section}>
-          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.logoutBtn} onPress={() => setConfirmLogout(true)} activeOpacity={0.85}>
             <Ionicons name="log-out-outline" size={20} color="#EF4444" />
             <Text style={styles.logoutText}>Logout</Text>
           </TouchableOpacity>
@@ -253,6 +236,24 @@ export default function SettingsScreen() {
           Class 10th H E~portal · Secure Access
         </Text>
       </ScrollView>
+
+      <ConfirmModal
+        visible={confirmLogout}
+        title="Logout"
+        message="Are you sure you want to logout?"
+        confirmLabel="Logout"
+        onConfirm={doLogout}
+        onCancel={() => setConfirmLogout(false)}
+      />
+
+      <ConfirmModal
+        visible={!!confirmDeleteUserId}
+        title="Delete User"
+        message={`Remove ${users.find((u) => u.id === confirmDeleteUserId)?.name ?? 'this user'}?`}
+        confirmLabel="Delete"
+        onConfirm={doDeleteUser}
+        onCancel={() => setConfirmDeleteUserId(null)}
+      />
 
       {/* Add User Modal */}
       <Modal visible={showAddUser} transparent animationType="slide">

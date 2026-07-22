@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  Alert,
   ScrollView,
   Platform,
 } from 'react-native';
@@ -18,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useData, Subject } from '@/contexts/DataContext';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ConfirmModal from '@/components/ConfirmModal';
 
 const SUBJECT_ICONS: Record<string, { name: any; color: string; bg: string; grad: string[] }> = {
   Mathematics: { name: 'calculator-variant', color: '#3949AB', bg: '#E8EAF6', grad: ['#3949AB', '#5C6BC0'] },
@@ -41,6 +41,8 @@ export default function SubjectsScreen() {
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [showAddSubject, setShowAddSubject] = useState(false);
   const [showAddTopic, setShowAddTopic] = useState(false);
+  const [confirmDeleteSubjectId, setConfirmDeleteSubjectId] = useState<string | null>(null);
+  const [confirmDeleteTopic, setConfirmDeleteTopic] = useState<{ subjectId: string; topicId: string } | null>(null);
 
   const [subjectName, setSubjectName] = useState('');
   const [subjectTeacher, setSubjectTeacher] = useState('');
@@ -75,18 +77,18 @@ export default function SubjectsScreen() {
     setTopicTitle(''); setTopicDesc(''); setFormError('');
   }
 
-  async function handleDeleteSubject(id: string) {
-    Alert.alert('Delete Subject', 'Remove this subject?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await deleteSubject(id); await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } },
-    ]);
+  async function confirmDeleteSubject() {
+    if (!confirmDeleteSubjectId) return;
+    await deleteSubject(confirmDeleteSubjectId);
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setConfirmDeleteSubjectId(null);
   }
 
-  async function handleDeleteTopic(subjectId: string, topicId: string) {
-    Alert.alert('Delete Topic', 'Remove this topic?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await deleteTopicFromSubject(subjectId, topicId); await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } },
-    ]);
+  async function confirmDeleteTopicFn() {
+    if (!confirmDeleteTopic) return;
+    await deleteTopicFromSubject(confirmDeleteTopic.subjectId, confirmDeleteTopic.topicId);
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setConfirmDeleteTopic(null);
   }
 
   return (
@@ -120,7 +122,7 @@ export default function SubjectsScreen() {
               {isAdmin && (
                 <TouchableOpacity
                   style={styles.deleteSubjectBtn}
-                  onPress={() => handleDeleteSubject(item.id)}
+                  onPress={() => setConfirmDeleteSubjectId(item.id)}
                   hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                 >
                   <Ionicons name="trash-outline" size={15} color="#EF4444" />
@@ -135,6 +137,24 @@ export default function SubjectsScreen() {
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No subjects added yet</Text>
           </View>
         }
+      />
+
+      <ConfirmModal
+        visible={!!confirmDeleteSubjectId}
+        title="Delete Subject"
+        message="Remove this subject and all its topics?"
+        confirmLabel="Delete"
+        onConfirm={confirmDeleteSubject}
+        onCancel={() => setConfirmDeleteSubjectId(null)}
+      />
+
+      <ConfirmModal
+        visible={!!confirmDeleteTopic}
+        title="Delete Topic"
+        message="Remove this topic from the syllabus?"
+        confirmLabel="Delete"
+        onConfirm={confirmDeleteTopicFn}
+        onCancel={() => setConfirmDeleteTopic(null)}
       />
 
       {isAdmin && (
@@ -193,7 +213,7 @@ export default function SubjectsScreen() {
                           </View>
                           {isAdmin && (
                             <TouchableOpacity
-                              onPress={() => handleDeleteTopic(liveSelected.id, topic.id)}
+                              onPress={() => setConfirmDeleteTopic({ subjectId: liveSelected.id, topicId: topic.id })}
                               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                             >
                               <Ionicons name="trash-outline" size={16} color="#EF4444" />

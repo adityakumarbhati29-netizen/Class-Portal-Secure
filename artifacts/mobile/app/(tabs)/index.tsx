@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  Alert,
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useData, Student } from '@/contexts/DataContext';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ConfirmModal from '@/components/ConfirmModal';
 
 function StudentCard({ student, isAdmin, onDelete }: { student: Student; isAdmin: boolean; onDelete: () => void }) {
   const colors = useColors();
@@ -52,6 +52,7 @@ export default function NominalRollScreen() {
 
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [fatherName, setFatherName] = useState('');
   const [contact, setContact] = useState('');
@@ -92,18 +93,11 @@ export default function NominalRollScreen() {
     setName(''); setFatherName(''); setContact(''); setRollNo(''); setFormError('');
   }
 
-  async function handleDelete(id: string) {
-    Alert.alert('Remove Student', 'Remove this student from nominal roll?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: async () => {
-          await deleteStudent(id);
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        },
-      },
-    ]);
+  async function confirmDelete() {
+    if (!confirmDeleteId) return;
+    await deleteStudent(confirmDeleteId);
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setConfirmDeleteId(null);
   }
 
   const bottomPad = Platform.OS === 'web' ? 34 + 84 : insets.bottom + 80;
@@ -148,7 +142,7 @@ export default function NominalRollScreen() {
           <StudentCard
             student={item}
             isAdmin={isAdmin}
-            onDelete={() => handleDelete(item.id)}
+            onDelete={() => setConfirmDeleteId(item.id)}
           />
         )}
         contentContainerStyle={[styles.listContent, { paddingBottom: bottomPad }]}
@@ -176,6 +170,15 @@ export default function NominalRollScreen() {
           </LinearGradient>
         </TouchableOpacity>
       )}
+
+      <ConfirmModal
+        visible={!!confirmDeleteId}
+        title="Remove Student"
+        message="Remove this student from the nominal roll?"
+        confirmLabel="Remove"
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
 
       {/* Add Student Modal */}
       <Modal visible={showModal} transparent animationType="slide">

@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  Alert,
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useData, SoftBoardPost } from '@/contexts/DataContext';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ConfirmModal from '@/components/ConfirmModal';
 
 const CARD_COLORS: Array<[string, string]> = [
   ['#5C6BC0', '#3949AB'],
@@ -77,6 +77,7 @@ export default function SoftBoardScreen() {
   const isAdmin = user?.role === 'admin';
 
   const [showModal, setShowModal] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [pinned, setPinned] = useState(false);
@@ -105,11 +106,11 @@ export default function SoftBoardScreen() {
     setTitle(''); setContent(''); setPinned(false); setColorIndex(0); setFormError('');
   }
 
-  async function handleDelete(id: string) {
-    Alert.alert('Delete Post', 'Remove this post from the soft board?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await deleteSoftBoardPost(id); await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } },
-    ]);
+  async function confirmDelete() {
+    if (!confirmDeleteId) return;
+    await deleteSoftBoardPost(confirmDeleteId);
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setConfirmDeleteId(null);
   }
 
   async function handleTogglePin(post: SoftBoardPost) {
@@ -132,7 +133,7 @@ export default function SoftBoardScreen() {
           <PostCard
             post={item}
             isAdmin={isAdmin}
-            onDelete={() => handleDelete(item.id)}
+            onDelete={() => setConfirmDeleteId(item.id)}
             onTogglePin={() => handleTogglePin(item)}
           />
         )}
@@ -145,6 +146,15 @@ export default function SoftBoardScreen() {
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Soft board is empty</Text>
           </View>
         }
+      />
+
+      <ConfirmModal
+        visible={!!confirmDeleteId}
+        title="Delete Post"
+        message="Remove this post from the soft board?"
+        confirmLabel="Delete"
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmDeleteId(null)}
       />
 
       {isAdmin && (
