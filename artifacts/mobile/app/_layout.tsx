@@ -14,7 +14,7 @@ import {
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import { DataProvider } from '@/contexts/DataContext';
+import { DataProvider, useData } from '@/contexts/DataContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -23,8 +23,14 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const { user, isLoading } = useAuth();
+  const { refresh } = useData();
   const segments = useSegments();
   const router = useRouter();
+
+  // Fetch all data whenever a user logs in
+  useEffect(() => {
+    if (user) refresh();
+  }, [user]);
 
   useEffect(() => {
     if (isLoading) return;
