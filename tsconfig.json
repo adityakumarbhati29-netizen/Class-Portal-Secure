@@ -2,6 +2,11 @@
   "extends": "./tsconfig.base.json",
   "compileOnSave": false,
   "files": [],
+  "compilerOptions": {
+    "strict": false,
+    "noImplicitAny": false,
+    "skipLibCheck": true
+  },
   "references": [
     {
       "path": "./lib/db"
@@ -14,10 +19,4 @@
     }
   ]
 }
-{
-  "compilerOptions": {
-    "strict": false,
-    "noImplicitAny": false,
-    "skipLibCheck": true
-  }
-}
+
