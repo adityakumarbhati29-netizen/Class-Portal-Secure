@@ -2,7 +2,6 @@ import { Router } from "express";
 import { db, classTestsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../middlewares/auth";
-import { v4 as uuid } from "uuid";
 
 const router = Router();
 
@@ -13,14 +12,15 @@ router.get("/class-tests", requireAuth, async (_req, res) => {
 
 router.post("/class-tests", requireAdmin, async (req, res) => {
   const { title, date, totalMarks } = req.body ?? {};
-  const id = uuid();
-  await db.insert(classTestsTable).values({
-    id,
-    title,
-    date,
-    totalMarks: Number(totalMarks),
-  });
-  res.status(201).json({ id, title, date, totalMarks: Number(totalMarks) });
+  const [created] = await db
+    .insert(classTestsTable)
+    .values({
+      title,
+      date,
+      totalMarks: Number(totalMarks),
+    })
+    .returning();
+  res.status(201).json(created ?? { title, date, totalMarks: Number(totalMarks) });
 });
 
 router.put("/class-tests/:id", requireAdmin, async (req, res) => {
@@ -40,4 +40,3 @@ router.delete("/class-tests/:id", requireAdmin, async (req, res) => {
 });
 
 export default router;
-
