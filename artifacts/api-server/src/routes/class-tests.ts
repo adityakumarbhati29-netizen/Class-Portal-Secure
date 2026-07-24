@@ -18,7 +18,7 @@ router.post("/class-tests", requireAdmin, async (req, res) => {
       title,
       date,
       totalMarks: Number(totalMarks),
-    })
+    } as any)
     .returning();
   res.status(201).json(created ?? { title, date, totalMarks: Number(totalMarks) });
 });
@@ -27,16 +27,17 @@ router.put("/class-tests/:id", requireAdmin, async (req, res) => {
   const { title, date, totalMarks } = req.body ?? {};
   await db
     .update(classTestsTable)
-    .set({ title, date, totalMarks: Number(totalMarks) })
-    .where(eq(classTestsTable.id, String(req.params.id)));
+    .set({ title, date, totalMarks: Number(totalMarks) } as any)
+    .where(eq(classTestsTable.id, String(req.params.id) as any));
   res.json({ ok: true });
 });
 
 router.delete("/class-tests/:id", requireAdmin, async (req, res) => {
   await db
     .delete(classTestsTable)
-    .where(eq(classTestsTable.id, String(req.params.id)));
+    .where(eq(classTestsTable.id, String(req.params.id) as any));
   res.json({ ok: true });
 });
 
 export default router;
+
