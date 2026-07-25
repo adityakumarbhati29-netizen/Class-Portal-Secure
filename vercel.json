@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm --filter mobile build",
+  "buildCommand": "npx expo export -p web --project-root mobile",
   "outputDirectory": "mobile/dist",
   "framework": null,
   "rewrites": [
