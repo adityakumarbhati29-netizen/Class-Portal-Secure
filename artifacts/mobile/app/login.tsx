@@ -1,35 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-  Platform,
-  KeyboardAvoidingView,
-  ScrollView,
-  Dimensions,
-} from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withDelay,
-  withSpring,
-  Easing,
-} from 'react-native-reanimated';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
 export default function LoginScreen() {
+  const router = useRouter();
   const { login } = useAuth();
-  const insets = useSafeAreaInsets();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -37,361 +17,188 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Animation values
-  const headerOpacity = useSharedValue(0);
-  const headerTranslateY = useSharedValue(-30);
-  const formOpacity = useSharedValue(0);
-  const formTranslateY = useSharedValue(40);
-  const logoScale = useSharedValue(0.6);
-  const logoOpacity = useSharedValue(0);
-  const errorShake = useSharedValue(0);
+  const handleLogin = async () => {
+    setError('');
 
-  useEffect(() => {
-    logoOpacity.value = withDelay(100, withTiming(1, { duration: 600 }));
-    logoScale.value = withDelay(100, withSpring(1, { damping: 12, stiffness: 100 }));
-    headerOpacity.value = withDelay(400, withTiming(1, { duration: 600 }));
-    headerTranslateY.value = withDelay(400, withTiming(0, { duration: 600, easing: Easing.out(Easing.cubic) }));
-    formOpacity.value = withDelay(700, withTiming(1, { duration: 600 }));
-    formTranslateY.value = withDelay(700, withTiming(0, { duration: 600, easing: Easing.out(Easing.cubic) }));
-  }, []);
-
-  const logoAnimStyle = useAnimatedStyle(() => ({
-    opacity: logoOpacity.value,
-    transform: [{ scale: logoScale.value }],
-  }));
-
-  const headerAnimStyle = useAnimatedStyle(() => ({
-    opacity: headerOpacity.value,
-    transform: [{ translateY: headerTranslateY.value }],
-  }));
-
-  const formAnimStyle = useAnimatedStyle(() => ({
-    opacity: formOpacity.value,
-    transform: [{ translateY: formTranslateY.value }],
-  }));
-
-  const shakeStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: errorShake.value }],
-  }));
-
-  function triggerShake() {
-    errorShake.value = withSpring(0, { damping: 3, stiffness: 400 }, () => {
-      errorShake.value = 0;
-    });
-    errorShake.value = withSpring(10, { damping: 3, stiffness: 400 });
-  }
-
-  async function handleLogin() {
-    if (!username.trim() || !password.trim()) {
-      setError('Please enter username and password');
-      triggerShake();
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    if (!username || !password) {
+      setError('Please enter both username and password');
       return;
     }
-    setIsLoading(true);
-    setError('');
-    const success = await login(username.trim(), password.trim());
-    setIsLoading(false);
-    if (!success) {
-      setError('Incorrect username or password');
-      triggerShake();
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    } else {
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    }
-  }
 
-  const topPad = Platform.OS === 'web' ? 67 : insets.top;
-  const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
+    setIsLoading(true);
+
+    try {
+      // Calls your AuthContext login function to verify admin123 or student1
+      await login(username, password);
+      router.replace('/(tabs)');
+    } catch (err) {
+      setError('Invalid username or password. (Hint: admin / admin123 or student1 / pass1234)');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <LinearGradient colors={['#3949AB', '#5C6BC0', '#7E57C2']} style={styles.gradient}>
-      {/* Decorative circles */}
-      <View style={[styles.decCircle1]} />
-      <View style={[styles.decCircle2]} />
-      <View style={[styles.decCircle3]} />
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+      style={styles.container}
+    >
+      <LinearGradient colors={['#4c669f', '#3b5998', '#192f6d']} style={styles.gradient}>
+        <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+          <View style={styles.card}>
+            <Ionicons name="school" size={56} color="#4c669f" style={styles.icon} />
 
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <ScrollView
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingTop: topPad + 20, paddingBottom: bottomPad + 20 },
-          ]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Logo */}
-          <Animated.View style={[styles.logoContainer, logoAnimStyle]}>
-            <View style={styles.logoCircle}>
-              <MaterialCommunityIcons name="school" size={52} color="#3949AB" />
-            </View>
-          </Animated.View>
+            <Text style={styles.title}>Welcome Portal</Text>
+            <Text style={styles.subtitle}>Sign in as Admin or Student</Text>
 
-          {/* Title */}
-          <Animated.View style={[styles.headerContainer, headerAnimStyle]}>
-            <Text style={styles.welcomeText}>Welcome to</Text>
-            <Text style={styles.appTitle}>Class 10th H</Text>
-            <Text style={styles.appSubtitle}>E~portal</Text>
-            <Text style={styles.tagline}>Your class, your community</Text>
-          </Animated.View>
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-          {/* Form Card */}
-          <Animated.View style={[styles.formCard, formAnimStyle, shakeStyle]}>
-            <Text style={styles.signInLabel}>Sign In</Text>
-
-            {/* Username */}
-            <View style={styles.inputWrapper}>
-              <View style={styles.inputIcon}>
-                <Ionicons name="person-outline" size={20} color="#5C6BC0" />
-              </View>
+            <View style={styles.inputContainer}>
+              <Ionicons name="person-outline" size={20} color="#666" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Username"
-                placeholderTextColor="#9CA3AF"
+                placeholder="Username (e.g., admin or student1)"
+                placeholderTextColor="#999"
                 value={username}
-                onChangeText={(t) => { setUsername(t); setError(''); }}
+                onChangeText={setUsername}
                 autoCapitalize="none"
-                autoCorrect={false}
-                returnKeyType="next"
               />
             </View>
 
-            {/* Password */}
-            <View style={styles.inputWrapper}>
-              <View style={styles.inputIcon}>
-                <Ionicons name="lock-closed-outline" size={20} color="#5C6BC0" />
-              </View>
+            <View style={styles.inputContainer}>
+              <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
               <TextInput
-                style={[styles.input, styles.inputFlex]}
+                style={styles.input}
                 placeholder="Password"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#999"
                 value={password}
-                onChangeText={(t) => { setPassword(t); setError(''); }}
+                onChangeText={setPassword}
                 secureTextEntry={!showPassword}
-                returnKeyType="done"
-                onSubmitEditing={handleLogin}
               />
-              <TouchableOpacity
-                onPress={() => setShowPassword((v) => !v)}
-                style={styles.eyeBtn}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons
-                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                  size={20}
-                  color="#9CA3AF"
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Ionicons 
+                  name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                  size={20} 
+                  color="#666" 
                 />
               </TouchableOpacity>
             </View>
 
-            {/* Error */}
-            {error ? (
-              <View style={styles.errorRow}>
-                <Ionicons name="alert-circle" size={14} color="#EF4444" />
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            ) : null}
-
-            {/* Login Button */}
-            <TouchableOpacity
-              style={[styles.loginBtn, isLoading && styles.loginBtnDisabled]}
-              onPress={handleLogin}
-              disabled={isLoading}
-              activeOpacity={0.85}
-            >
-              <LinearGradient
-                colors={['#5C6BC0', '#3949AB']}
-                style={styles.loginBtnGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <>
-                    <Text style={styles.loginBtnText}>Login</Text>
-                    <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
-                  </>
-                )}
-              </LinearGradient>
+            <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={isLoading}>
+              {isLoading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text style={styles.buttonText}>Sign In</Text>
+              )}
             </TouchableOpacity>
 
-            <Text style={styles.secureNote}>
-              <Ionicons name="lock-closed" size={11} color="#9CA3AF" /> Secure & Private Access
-            </Text>
-          </Animated.View>
+            <View style={styles.hintContainer}>
+              <Text style={styles.hintTitle}>Demo Accounts:</Text>
+              <Text style={styles.hintText}>• Admin: admin / admin123</Text>
+              <Text style={styles.hintText}>• Student: student1 / pass1234</Text>
+            </View>
+          </View>
         </ScrollView>
-      </KeyboardAvoidingView>
-    </LinearGradient>
+      </LinearGradient>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  gradient: { flex: 1 },
-  scrollContent: {
-    alignItems: 'center',
-    paddingHorizontal: 24,
+  container: {
+    flex: 1,
   },
-  // Decorative elements
-  decCircle1: {
-    position: 'absolute',
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    top: -60,
-    right: -60,
+  gradient: {
+    flex: 1,
   },
-  decCircle2: {
-    position: 'absolute',
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    bottom: 100,
-    left: -50,
-  },
-  decCircle3: {
-    position: 'absolute',
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    top: 200,
-    right: -20,
-  },
-  // Logo
-  logoContainer: { marginBottom: 20 },
-  logoCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
+  scrollContainer: {
+    flexGrow: 1,
     justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  card: {
+    width: width - 40,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 25,
+    alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
   },
-  // Header
-  headerContainer: { alignItems: 'center', marginBottom: 32 },
-  welcomeText: {
-    fontSize: 18,
-    color: 'rgba(255,255,255,0.85)',
-    fontFamily: 'Inter_400Regular',
-    letterSpacing: 0.5,
+  icon: {
+    marginBottom: 10,
   },
-  appTitle: {
-    fontSize: 34,
-    color: '#FFFFFF',
-    fontFamily: 'Inter_700Bold',
-    letterSpacing: 1,
-    marginTop: 2,
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 5,
   },
-  appSubtitle: {
-    fontSize: 28,
-    color: '#FFD54F',
-    fontFamily: 'Inter_700Bold',
-    letterSpacing: 2,
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 20,
   },
-  tagline: {
-    marginTop: 8,
+  errorText: {
+    color: '#ff3b30',
     fontSize: 13,
-    color: 'rgba(255,255,255,0.65)',
-    fontFamily: 'Inter_400Regular',
-    letterSpacing: 0.3,
+    marginBottom: 15,
+    textAlign: 'center',
   },
-  // Form Card
-  formCard: {
-    width: '100%',
-    maxWidth: 400,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 28,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 16,
-  },
-  signInLabel: {
-    fontSize: 22,
-    fontFamily: 'Inter_700Bold',
-    color: '#1A237E',
-    marginBottom: 24,
-  },
-  // Inputs
-  inputWrapper: {
+  inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F7FF',
-    borderRadius: 12,
+    width: '100%',
+    height: 50,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#E0E7FF',
-    marginBottom: 16,
-    minHeight: 52,
-    paddingHorizontal: 4,
+    borderColor: '#e0e0e0',
   },
   inputIcon: {
-    width: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginRight: 10,
   },
   input: {
     flex: 1,
     fontSize: 15,
-    fontFamily: 'Inter_400Regular',
-    color: '#1A237E',
-    paddingVertical: 14,
-    paddingRight: 12,
+    color: '#333',
   },
-  inputFlex: { flex: 1 },
-  eyeBtn: { paddingHorizontal: 12, paddingVertical: 14 },
-  // Error
-  errorRow: {
-    flexDirection: 'row',
+  button: {
+    width: '100%',
+    backgroundColor: '#4c669f',
+    paddingVertical: 15,
+    borderRadius: 10,
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 12,
-    marginTop: -4,
+    marginTop: 5,
+    marginBottom: 20,
   },
-  errorText: {
-    fontSize: 13,
-    color: '#EF4444',
-    fontFamily: 'Inter_400Regular',
-    flex: 1,
-  },
-  // Login Button
-  loginBtn: {
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginTop: 8,
-  },
-  loginBtnDisabled: { opacity: 0.7 },
-  loginBtnGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    gap: 8,
-  },
-  loginBtnText: {
+  buttonText: {
+    color: 'white',
     fontSize: 16,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
+    fontWeight: 'bold',
   },
-  secureNote: {
-    textAlign: 'center',
-    marginTop: 16,
+  hintContainer: {
+    width: '100%',
+    backgroundColor: '#f1f3f5',
+    padding: 12,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#4c669f',
+  },
+  hintTitle: {
     fontSize: 12,
-    color: '#9CA3AF',
-    fontFamily: 'Inter_400Regular',
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 3,
+  },
+  hintText: {
+    fontSize: 12,
+    color: '#555',
   },
 });
