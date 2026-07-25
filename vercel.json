@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd mobile && npx expo export -p web",
+  "buildCommand": "pnpm --filter mobile build",
   "outputDirectory": "mobile/dist",
   "framework": null,
   "rewrites": [
